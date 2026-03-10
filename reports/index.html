@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slot — All Reports</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #0f1218;
+    --surface2: #151b24;
+    --border: #1e2d3d;
+    --accent: #00d4ff;
+    --accent3: #7fff6b;
+    --warn: #ffcc00;
+    --danger: #ff3d5a;
+    --text: #c8d8e8;
+    --text-dim: #5a7a8a;
+    --text-bright: #eaf4ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-weight: 300; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.012) 2px, rgba(0,212,255,0.012) 4px); pointer-events: none; z-index: 1000; }
+
+  /* ヘッダー */
+  .header { border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(90deg, var(--surface) 0%, transparent 100%); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px); }
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .back-btn { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; padding: 5px 12px; border: 1px solid var(--border); transition: all 0.2s; }
+  .back-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .header-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; }
+  .header-sub { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-top: 2px; }
+  .header-count { font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 2px; }
+
+  .main { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+
+  /* 検索・フィルター */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 220px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); pointer-events: none; }
+  .search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 9px 12px 9px 32px; letter-spacing: 1px; outline: none; transition: border-color 0.2s; }
+  .search-input::placeholder { color: var(--text-dim); }
+  .search-input:focus { border-color: var(--accent); }
+
+  .filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn { font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 6px 14px; letter-spacing: 1px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); transition: all 0.15s; user-select: none; }
+  .filter-btn:hover { color: var(--text); border-color: var(--text-dim); }
+  .filter-btn.f-all      { border-color: var(--accent);  color: var(--accent);  background: rgba(0,212,255,0.08); }
+  .filter-btn.f-complete { border-color: var(--accent3); color: var(--accent3); background: rgba(127,255,107,0.08); }
+  .filter-btn.f-review   { border-color: var(--warn);    color: var(--warn);    background: rgba(255,204,0,0.08); }
+  .filter-btn.f-wip      { border-color: var(--danger);  color: var(--danger);  background: rgba(255,61,90,0.1); }
+  .filter-btn.f-new      { border-color: var(--accent);  color: var(--accent);  background: rgba(0,212,255,0.08); }
+
+  /* ソートセレクト */
+  .sort-select { font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; cursor: pointer; outline: none; }
+  .sort-select:focus { border-color: var(--accent); }
+
+  .result-info { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 16px; min-height: 16px; }
+  .result-info span { color: var(--accent); }
+
+  /* テーブル */
+  .report-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+  .report-table th {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px;
+    color: var(--text-dim); text-align: left; padding: 10px 16px;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    white-space: nowrap;
+  }
+  .report-table th.sortable { cursor: pointer; user-select: none; }
+  .report-table th.sortable:hover { color: var(--accent); }
+  .report-table th .sort-icon { margin-left: 4px; opacity: 0.4; }
+  .report-table th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+
+  .report-table td { padding: 12px 16px; border-bottom: 1px solid rgba(30,45,61,0.6); vertical-align: middle; }
+  .report-table tr { transition: background 0.15s; }
+  .report-table tr:hover td { background: var(--surface2); }
+  .report-table tr.hidden { display: none; }
+
+  /* 各セルのスタイル */
+  .col-id { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .col-date { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+  .col-title a { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 15px; color: var(--text-bright); text-decoration: none; letter-spacing: 1px; transition: color 0.2s; }
+  .col-title a:hover { color: var(--accent); }
+  .col-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; max-width: 320px; }
+
+  .col-status { white-space: nowrap; }
+  .status-pill { font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 3px 10px; letter-spacing: 1px; border: 1px solid; }
+  .s-complete { color: var(--accent3); border-color: rgba(127,255,107,0.35); background: rgba(127,255,107,0.07); }
+  .s-review   { color: var(--warn);    border-color: rgba(255,204,0,0.35);   background: rgba(255,204,0,0.07); }
+  .s-wip      { color: var(--danger);  border-color: rgba(255,61,90,0.35);   background: rgba(255,61,90,0.07); }
+  .s-new      { color: var(--accent);  border-color: rgba(0,212,255,0.35);   background: rgba(0,212,255,0.07); }
+
+  .col-issues { white-space: nowrap; }
+  .issue-badge { font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 2px 7px; border-radius: 2px; margin-right: 4px; }
+  .ib-critical { background: rgba(255,61,90,0.15);   color: var(--danger); }
+  .ib-warn     { background: rgba(255,204,0,0.12);   color: var(--warn); }
+  .ib-future   { background: rgba(127,255,107,0.1);  color: var(--accent3); }
+
+  .col-link a { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--accent); text-decoration: none; letter-spacing: 1px; transition: opacity 0.2s; }
+  .col-link a:hover { opacity: 0.6; }
+
+  /* 左端ステータスライン */
+  .report-table tbody tr { position: relative; }
+  .row-bar { display: inline-block; width: 3px; height: 36px; border-radius: 1px; margin-right: 4px; vertical-align: middle; }
+  .bar-complete { background: var(--accent3); }
+  .bar-review   { background: var(--warn); }
+  .bar-wip      { background: var(--danger); }
+  .bar-new      { background: var(--accent); }
+
+  .no-results { padding: 48px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 2px; border: 1px dashed var(--border); }
+
+  /* フッター */
+  .footer { border-top: 1px solid var(--border); padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  .footer-left { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 2px; }
+  .footer-right { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); }
+
+  @media (max-width: 768px) {
+    .header { padding: 14px 16px; }
+    .main { padding: 20px 16px; }
+    .toolbar { flex-direction: column; }
+    .col-desc, .col-issues { display: none; }
+    .footer { flex-direction: column; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <a class="back-btn" href="../index.html">← HOME</a>
+    <div>
+      <div class="header-title">All Reports</div>
+      <div class="header-sub">// SLOT PROJECT · REPORT ARCHIVE</div>
+    </div>
+  </div>
+  <div class="header-count" id="header-count">— REPORTS</div>
+</header>
+
+<main class="main">
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" type="text" id="search-input" placeholder="タイトル・説明を検索...">
+    </div>
+    <div class="filter-btns">
+      <button class="filter-btn f-all"  data-filter="all">ALL</button>
+      <button class="filter-btn"        data-filter="complete">✓ COMPLETE</button>
+      <button class="filter-btn"        data-filter="review">… REVIEW</button>
+      <button class="filter-btn"        data-filter="wip">! WIP</button>
+      <button class="filter-btn"        data-filter="new">★ NEW</button>
+    </div>
+    <select class="sort-select" id="sort-select">
+      <option value="date-desc">日付 ↓ 新しい順</option>
+      <option value="date-asc">日付 ↑ 古い順</option>
+      <option value="id-desc">ID ↓</option>
+      <option value="id-asc">ID ↑</option>
+      <option value="critical-desc">Critical ↓</option>
+    </select>
+  </div>
+
+  <div class="result-info" id="result-info"></div>
+
+  <table class="report-table" id="report-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>DATE</th>
+        <th>TITLE</th>
+        <th>DESC</th>
+        <th>STATUS</th>
+        <th>ISSUES</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="report-tbody"></tbody>
+  </table>
+
+  <div class="no-results" id="no-results" style="display:none">NO REPORTS FOUND</div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-left">SLOT — DEV REPORT HUB</div>
+  <div class="footer-right" id="last-updated">—</div>
+</footer>
+
+<script>
+// reports.json は1階層上にある
+const JSON_PATH = '../reports.json';
+
+let allReports = [];
+let currentFilter = 'all';
+let currentQuery  = '';
+let currentSort   = 'date-desc';
+
+function statusPill(status) {
+  const map = {
+    complete: ['s-complete', '✓ COMPLETE'],
+    review:   ['s-review',   '… REVIEW'],
+    wip:      ['s-wip',      '! WIP'],
+    new:      ['s-new',      '★ NEW'],
+  };
+  const [cls, label] = map[status] || ['s-new', status.toUpperCase()];
+  return `<span class="status-pill ${cls}">${label}</span>`;
+}
+
+function issueBadges(issues) {
+  const parts = [];
+  if (issues.critical > 0) parts.push(`<span class="issue-badge ib-critical">C×${issues.critical}</span>`);
+  if (issues.warn     > 0) parts.push(`<span class="issue-badge ib-warn">W×${issues.warn}</span>`);
+  if (issues.future   > 0) parts.push(`<span class="issue-badge ib-future">F×${issues.future}</span>`);
+  return parts.join('') || '<span style="color:var(--text-dim);font-size:11px">—</span>';
+}
+
+function barClass(status) {
+  return { complete:'bar-complete', review:'bar-review', wip:'bar-wip', new:'bar-new' }[status] || 'bar-new';
+}
+
+function buildRow(r) {
+  const tr = document.createElement('tr');
+  tr.dataset.status = r.status;
+  tr.dataset.search = (r.title + ' ' + r.desc + ' ' + (r.tags||[]).join(' ')).toLowerCase();
+  tr.innerHTML = `
+    <td class="col-id"><span class="row-bar ${barClass(r.status)}"></span>#${r.id}</td>
+    <td class="col-date">${r.date}</td>
+    <td class="col-title"><a href="../${r.file}">${r.title.replace(/\n/g,' — ')}</a></td>
+    <td class="col-desc">${r.desc || '—'}</td>
+    <td class="col-status">${statusPill(r.status)}</td>
+    <td class="col-issues">${issueBadges(r.issues || {})}</td>
+    <td class="col-link"><a href="../${r.file}">→ 開く</a></td>`;
+  return tr;
+}
+
+function sortReports(reports) {
+  return [...reports].sort((a, b) => {
+    switch (currentSort) {
+      case 'date-asc':      return a.date.localeCompare(b.date);
+      case 'date-desc':     return b.date.localeCompare(a.date);
+      case 'id-asc':        return a.id.localeCompare(b.id);
+      case 'id-desc':       return b.id.localeCompare(a.id);
+      case 'critical-desc': return (b.issues?.critical||0) - (a.issues?.critical||0);
+      default:              return 0;
+    }
+  });
+}
+
+function render() {
+  const tbody = document.getElementById('report-tbody');
+  tbody.innerHTML = '';
+
+  const sorted = sortReports(allReports);
+  sorted.forEach(r => tbody.appendChild(buildRow(r)));
+
+  applyFilter();
+}
+
+function applyFilter() {
+  const rows = document.querySelectorAll('#report-tbody tr');
+  let visible = 0;
+
+  rows.forEach(row => {
+    const statusOk = currentFilter === 'all' || row.dataset.status === currentFilter;
+    const queryOk  = currentQuery === '' || (row.dataset.search || '').includes(currentQuery);
+    const show = statusOk && queryOk;
+    row.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+
+  document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+  document.getElementById('report-table').style.display = visible === 0 ? 'none' : '';
+
+  const total = allReports.length;
+  const infoEl = document.getElementById('result-info');
+  if (currentFilter === 'all' && currentQuery === '') {
+    infoEl.innerHTML = `<span>${total}</span> report(s)`;
+  } else {
+    infoEl.innerHTML = `<span>${visible}</span> / ${total} report(s) — filtered`;
+  }
+}
+
+async function init() {
+  try {
+    const res = await fetch(JSON_PATH + '?v=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    allReports = data.reports || [];
+
+    document.getElementById('header-count').textContent = allReports.length + ' REPORTS';
+    document.getElementById('last-updated').textContent = 'UPDATED: ' + (data.updated || '—');
+
+    render();
+  } catch(e) {
+    document.getElementById('report-tbody').innerHTML =
+      `<tr><td colspan="7" style="padding:32px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);">⚠ reports.json を読み込めませんでした</td></tr>`;
+    console.error(e);
+  }
+
+  // フィルター
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentFilter = btn.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.className = 'filter-btn';
+      });
+      btn.classList.add('f-' + currentFilter);
+      applyFilter();
+    });
+  });
+
+  // 検索
+  document.getElementById('search-input').addEventListener('input', e => {
+    currentQuery = e.target.value.trim().toLowerCase();
+    applyFilter();
+  });
+
+  // ソート
+  document.getElementById('sort-select').addEventListener('change', e => {
+    currentSort = e.target.value;
+    render();
+  });
+}
+
+init();
+</script>
+</body>
+</html>

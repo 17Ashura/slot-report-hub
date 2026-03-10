@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slot — Dev Report Hub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #0f1218;
+    --surface2: #151b24;
+    --border: #1e2d3d;
+    --accent: #00d4ff;
+    --accent3: #7fff6b;
+    --warn: #ffcc00;
+    --danger: #ff3d5a;
+    --text: #c8d8e8;
+    --text-dim: #5a7a8a;
+    --text-bright: #eaf4ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* スキャンライン */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.012) 2px, rgba(0,212,255,0.012) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ヘッダー */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, var(--surface) 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+  .header-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .header-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .nav-link {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .live-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent3);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* メイン */
+  .main { padding: 40px 40px; max-width: 1200px; margin: 0 auto; }
+
+  /* ヒーローセクション */
+  .hero {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 40px 48px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3), var(--warn));
+  }
+  .hero::after {
+    content: 'SLOT';
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 96px;
+    font-weight: 700;
+    color: rgba(0,212,255,0.04);
+    letter-spacing: 8px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 36px;
+    color: var(--text-bright);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .hero-title span { color: var(--accent); }
+  .hero-desc {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.8;
+    max-width: 600px;
+  }
+
+  /* 統計グリッド */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.accent::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--accent3); }
+  .stat-card.warn::before { background: var(--warn); }
+  .stat-card.danger::before { background: var(--danger); }
+  .stat-card:hover { border-color: var(--accent); }
+
+  .stat-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 42px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-card.accent .stat-num { color: var(--accent); }
+  .stat-card.green .stat-num { color: var(--accent3); }
+  .stat-card.warn .stat-num { color: var(--warn); }
+  .stat-card.danger .stat-num { color: var(--danger); }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* セクションラベル */
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 2px solid var(--text-dim);
+  }
+
+  /* レポートグリッド */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+  }
+  .report-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,212,255,0.08);
+  }
+  .report-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    transition: background 0.2s;
+  }
+  .report-card.status-complete::before { background: var(--accent3); }
+  .report-card.status-review::before { background: var(--warn); }
+  .report-card.status-wip::before { background: var(--danger); }
+  .report-card.status-new::before { background: var(--accent); }
+
+  .card-top {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .tag-complete { background: rgba(127,255,107,0.1); color: var(--accent3); border: 1px solid rgba(127,255,107,0.25); }
+  .tag-review { background: rgba(255,204,0,0.12); color: var(--warn); border: 1px solid rgba(255,204,0,0.3); }
+  .tag-wip { background: rgba(255,61,90,0.15); color: var(--danger); border: 1px solid rgba(255,61,90,0.3); }
+  .tag-new { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+
+  .card-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .card-body { padding: 12px 20px 20px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .card-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--text-bright);
+    line-height: 1.3;
+    letter-spacing: 1px;
+  }
+  .card-desc {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .meta-dot.red { background: var(--danger); }
+  .meta-dot.yellow { background: var(--warn); }
+  .meta-dot.green { background: var(--accent3); }
+
+  .card-arrow {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    color: var(--text-dim);
+    transition: all 0.2s;
+  }
+  .report-card:hover .card-arrow {
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  /* 追加予定プレースホルダー */
+  .report-card.placeholder {
+    border-style: dashed;
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+  }
+  .report-card.placeholder:hover { transform: none; box-shadow: none; }
+  .placeholder-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 10px;
+    min-height: 180px;
+  }
+  .placeholder-icon {
+    font-size: 28px;
+    color: var(--text-dim);
+  }
+  .placeholder-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  /* タイムライン */
+  .timeline-section { margin-bottom: 48px; }
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px 28px;
+  }
+  .tl-item {
+    display: flex;
+    gap: 20px;
+    padding: 0 0 24px 0;
+    position: relative;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: 19px; top: 28px; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .tl-item:last-child::before { display: none; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-dot {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    border: 2px solid;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .tl-dot.complete { border-color: var(--accent3); color: var(--accent3); background: rgba(127,255,107,0.08); }
+  .tl-dot.warn { border-color: var(--warn); color: var(--warn); background: rgba(255,204,0,0.08); }
+  .tl-dot.info { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+  .tl-body { flex: 1; padding-top: 8px; }
+  .tl-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-bright);
+    margin-bottom: 2px;
+  }
+  .tl-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .tl-link {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: opacity 0.2s;
+  }
+  .tl-link:hover { opacity: 0.7; }
+
+  /* フッター */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+  .footer-left {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+  .footer-right {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* 検索・フィルターバー */
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 9px 12px 9px 32px;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: var(--text-dim); }
+  .search-input:focus { border-color: var(--accent); }
+
+  .filter-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 6px 14px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .filter-btn:hover { color: var(--text); border-color: var(--text-dim); }
+  .filter-btn.active-all    { border-color: var(--accent);  color: var(--accent);  background: rgba(0,212,255,0.08); }
+  .filter-btn.active-complete { border-color: var(--accent3); color: var(--accent3); background: rgba(127,255,107,0.08); }
+  .filter-btn.active-review   { border-color: var(--warn);   color: var(--warn);   background: rgba(255,204,0,0.08); }
+  .filter-btn.active-wip      { border-color: var(--danger); color: var(--danger); background: rgba(255,61,90,0.1); }
+  .filter-btn.active-new      { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+
+  .result-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    min-height: 16px;
+  }
+  .result-count span { color: var(--accent); }
+
+  /* カード非表示アニメ */
+  .report-card.hidden {
+    display: none;
+  }
+  .no-results {
+    grid-column: 1 / -1;
+    padding: 48px;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    border: 1px dashed var(--border);
+    letter-spacing: 2px;
+  }
+
+  @media (max-width: 768px) {
+    .header { padding: 16px 20px; }
+    .main { padding: 24px 20px; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .report-grid { grid-template-columns: 1fr; }
+    .hero { padding: 28px 24px; }
+    .hero::after { display: none; }
+    .footer { flex-direction: column; gap: 8px; text-align: center; }
+    .search-bar { flex-direction: column; }
+    .search-input-wrap { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-title">Slot — Report Hub</div>
+    <div class="header-sub">// SLOT PROJECT · GAME DEV PROGRESS TRACKING</div>
+  </div>
+  <div class="header-right">
+    <a class="nav-link" href="reports/index.html">☰ ALL REPORTS</a>
+    <div class="live-badge">
+      <span class="live-dot"></span>
+      ACTIVE
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ヒーロー -->
+  <section class="hero">
+    <div class="hero-label">// PROJECT OVERVIEW</div>
+    <div class="hero-title">Slot<br><span>開発進捗レポート集</span></div>
+    <div class="hero-desc">
+      コードレビュー・設計分析・実装進捗をまとめた技術レポートのアーカイブです。
+      各レポートには実装上の課題、設計指摘、修正記録が含まれます。
+    </div>
+  </section>
+
+  <!-- 統計 -->
+  <div class="stat-grid">
+    <div class="stat-card accent">
+      <div class="stat-num" id="stat-total">1</div>
+      <div class="stat-label">TOTAL REPORTS</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-num" id="stat-complete">1</div>
+      <div class="stat-label">COMPLETED</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="stat-num" id="stat-wip">0</div>
+      <div class="stat-label">IN REVIEW</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-num" id="stat-issues">0</div>
+      <div class="stat-label">OPEN ISSUES</div>
+    </div>
+  </div>
+
+  <!-- レポート一覧 -->
+  <div class="section-label">// REPORT ARCHIVE</div>
+
+  <!-- 検索・フィルターバー -->
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" type="text" id="search-input" placeholder="タイトル・説明を検索...">
+    </div>
+    <div class="filter-buttons">
+      <button class="filter-btn active-all" data-filter="all">ALL</button>
+      <button class="filter-btn" data-filter="complete">✓ COMPLETE</button>
+      <button class="filter-btn" data-filter="review">… REVIEW</button>
+      <button class="filter-btn" data-filter="wip">! WIP</button>
+      <button class="filter-btn" data-filter="new">★ NEW</button>
+    </div>
+  </div>
+  <div class="result-count" id="result-count"></div>
+
+  <div class="report-grid" id="report-grid"></div>
+
+  <!-- タイムライン -->
+  <section class="timeline-section">
+    <div class="section-label">// ACTIVITY LOG</div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-left">SLOT — DEV REPORT HUB</div>
+  <div class="footer-right" id="last-updated">LAST UPDATED: —</div>
+</footer>
+
+<script>
+// ---------------------------------------------------------------
+//  index.html は編集不要です。
+//  レポートの追加は reports/ フォルダに HTML を置いて push するだけ。
+//  GitHub Actions が reports.json を自動更新します。
+// ---------------------------------------------------------------
+
+const TL_DOT = {
+  complete: { cls: "complete", symbol: "✓" },
+  review:   { cls: "warn",     symbol: "…" },
+  wip:      { cls: "warn",     symbol: "!" },
+  new:      { cls: "info",     symbol: "★" },
+};
+
+function tagClass(text) {
+  const t = text.toUpperCase();
+  if (t === "COMPLETE") return "tag-complete";
+  if (t === "REVIEW")   return "tag-review";
+  if (t === "WIP")      return "tag-wip";
+  return "tag-new";
+}
+
+function buildCard(r) {
+  const tagsHtml = r.tags.map(t =>
+    `<span class="card-tag ${tagClass(t)}">${t}</span>`
+  ).join("");
+  const metaHtml = [
+    r.issues.critical > 0 ? `<span class="meta-item"><span class="meta-dot red"></span>CRITICAL ×${r.issues.critical}</span>` : "",
+    r.issues.warn     > 0 ? `<span class="meta-item"><span class="meta-dot yellow"></span>WARN ×${r.issues.warn}</span>` : "",
+    r.issues.future   > 0 ? `<span class="meta-item"><span class="meta-dot green"></span>FUTURE ×${r.issues.future}</span>` : "",
+  ].filter(Boolean).join("");
+
+  // 検索・フィルター用にdata属性を付与
+  return `
+    <a class="report-card status-${r.status}"
+       href="${r.file}"
+       data-status="${r.status}"
+       data-search="${(r.title + ' ' + r.desc + ' ' + r.tags.join(' ')).toLowerCase()}">
+      <div class="card-top">
+        <div class="card-tags">${tagsHtml}</div>
+        <span class="card-date">${r.date}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${r.title.replace(/\n/g, "<br>")}</div>
+        <div class="card-desc">${r.desc}</div>
+        ${metaHtml ? `<div class="card-meta">${metaHtml}</div>` : ""}
+      </div>
+      <span class="card-arrow">→</span>
+    </a>`;
+}
+
+function buildTlItem(r) {
+  const dot = TL_DOT[r.status] || TL_DOT.new;
+  return `
+    <div class="tl-item">
+      <div class="tl-dot ${dot.cls}">${dot.symbol}</div>
+      <div class="tl-body">
+        <div class="tl-title">${r.title.replace(/\n/g, " — ")}</div>
+        <div class="tl-date">${r.date} &nbsp;|&nbsp; REPORT #${r.id}</div>
+        <a href="${r.file}" class="tl-link">→ レポートを見る</a>
+      </div>
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById("report-grid").innerHTML =
+    `<div style="grid-column:1/-1;padding:32px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);border:1px dashed var(--border);">
+      ⚠ ${msg}
+    </div>`;
+}
+
+// ------ 検索・フィルターロジック ------
+let currentFilter = "all";
+let currentQuery  = "";
+let totalReports  = 0;
+
+function applyFilter() {
+  const cards = document.querySelectorAll(".report-card:not(.placeholder)");
+  let visible = 0;
+
+  cards.forEach(card => {
+    const statusMatch = currentFilter === "all" || card.dataset.status === currentFilter;
+    const queryMatch  = currentQuery === "" || (card.dataset.search || "").includes(currentQuery);
+    const show = statusMatch && queryMatch;
+    card.classList.toggle("hidden", !show);
+    if (show) visible++;
+  });
+
+  // "NO RESULTS" 表示
+  const existing = document.querySelector(".no-results");
+  if (existing) existing.remove();
+  if (visible === 0 && totalReports > 0) {
+    const placeholder = document.querySelector(".report-card.placeholder");
+    const el = document.createElement("div");
+    el.className = "no-results";
+    el.textContent = "NO REPORTS FOUND";
+    document.getElementById("report-grid").insertBefore(el, placeholder);
+  }
+
+  // 件数表示
+  const countEl = document.getElementById("result-count");
+  if (currentFilter === "all" && currentQuery === "") {
+    countEl.innerHTML = `<span>${totalReports}</span> report(s)`;
+  } else {
+    countEl.innerHTML = `<span>${visible}</span> / ${totalReports} report(s) — filtered`;
+  }
+}
+
+function initFilterControls() {
+  // フィルターボタン
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentFilter = btn.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach(b => {
+        b.className = "filter-btn"; // reset
+      });
+      btn.classList.add(`active-${currentFilter}`);
+      applyFilter();
+    });
+  });
+
+  // 検索ボックス
+  document.getElementById("search-input").addEventListener("input", e => {
+    currentQuery = e.target.value.trim().toLowerCase();
+    applyFilter();
+  });
+}
+
+async function init() {
+  let data;
+  try {
+    const res = await fetch(`reports.json?v=${Date.now()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+  } catch (e) {
+    showError("reports.json を読み込めませんでした。GitHub Actions が完了するまでお待ちください。");
+    console.error(e);
+    return;
+  }
+
+  const reports = data.reports || [];
+  const sorted  = [...reports].reverse(); // 新しい順
+  totalReports  = reports.length;
+
+  // カードグリッド
+  document.getElementById("report-grid").innerHTML =
+    sorted.map(buildCard).join("") +
+    `<div class="report-card placeholder">
+      <div class="placeholder-inner">
+        <div class="placeholder-icon">+</div>
+        <div class="placeholder-text">NEXT REPORT<br>PENDING</div>
+      </div>
+    </div>`;
+
+  // タイムライン
+  document.getElementById("timeline").innerHTML =
+    sorted.map(buildTlItem).join("") +
+    `<div class="tl-item">
+      <div class="tl-dot info">①</div>
+      <div class="tl-body">
+        <div class="tl-title">Slot — Dev Report Hub 開設</div>
+        <div class="tl-date">— &nbsp;|&nbsp; SYSTEM</div>
+      </div>
+    </div>`;
+
+  // 統計
+  document.getElementById("stat-total").textContent    = reports.length;
+  document.getElementById("stat-complete").textContent = reports.filter(r => r.status === "complete").length;
+  document.getElementById("stat-wip").textContent      = reports.filter(r => r.status === "review" || r.status === "wip").length;
+  document.getElementById("stat-issues").textContent   = reports.reduce((s, r) => s + (r.issues?.critical || 0), 0);
+
+  // フッター
+  document.getElementById("last-updated").textContent =
+    "LAST UPDATED: " + (data.updated || "—");
+
+  // フィルター初期化（描画後に呼ぶ）
+  initFilterControls();
+  applyFilter();
+}
+
+init();
+</script>
+
+</body>
+</html>
