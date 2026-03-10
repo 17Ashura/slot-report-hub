@@ -1,4 +1,39 @@
 {
   "updated": "2026-03-10",
-  "reports": []
+  "reports": [
+    {
+      "id": "001",
+      "file": "reports/index.html",
+      "date": "2026-03-10",
+      "title": "Slot — All Reports",
+      "desc": "// SLOT PROJECT · REPORT ARCHIVE",
+      "status": "complete",
+      "tags": [
+        "COMPLETE",
+        "FINAL"
+      ],
+      "issues": {
+        "critical": 0,
+        "warn": 0,
+        "future": 0
+      }
+    },
+    {
+      "id": "002",
+      "file": "reports/report_20260310.html",
+      "date": "2026-03-10",
+      "title": "Battle & Buff System — Final Report",
+      "desc": "Unity / C# — 全セッション統合レポート | 分析ファイル数: 18",
+      "status": "complete",
+      "tags": [
+        "COMPLETE",
+        "FINAL"
+      ],
+      "issues": {
+        "critical": 0,
+        "warn": 7,
+        "future": 8
+      }
+    }
+  ]
 }
