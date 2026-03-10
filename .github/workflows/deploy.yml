@@ -1,0 +1,156 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate reports.json
+        run: |
+          node - <<'JSEOF'
+          const fs = require('fs');
+          const dir = 'reports';
+
+          if (!fs.existsSync(dir)) {
+            console.log('reports/ not found — writing empty reports.json');
+            fs.writeFileSync('reports.json', JSON.stringify({ updated: new Date().toISOString().slice(0,10), reports: [] }, null, 2) + '\n');
+            process.exit(0);
+          }
+
+          function extractTitle(html, filename) {
+            const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+            return m ? m[1].trim() : filename;
+          }
+          function extractStatus(html) {
+            const m = html.match(/class=["']status-badge["'][^>]*>([\s\S]*?)<\/div>/i);
+            if (!m) return 'complete';
+            const t = m[1].replace(/<[^>]+>/g,'').toUpperCase();
+            if (t.includes('WIP') || t.includes('IN PROGRESS')) return 'wip';
+            if (t.includes('REVIEW'))                            return 'review';
+            if (t.includes('FIXED')||t.includes('COMPLETE')||t.includes('DONE')) return 'complete';
+            return 'new';
+          }
+          function extractIssues(html) {
+            const c = p => (html.match(new RegExp(p,'g'))||[]).length;
+            return {
+              critical: c('class=["\']issue-tag tag-danger["\']'),
+              warn:     c('class=["\']issue-tag tag-warn["\']'),
+              future:   c('class=["\']issue-tag tag-good["\']'),
+            };
+          }
+          function extractDesc(html) {
+            const m = html.match(/class=["']header-sub["'][^>]*>([\s\S]*?)<\/div>/i);
+            if (m) {
+              const t = m[1].replace(/<[^>]+>/g,'').trim();
+              if (t) return t.length > 80 ? t.slice(0,80)+'...' : t;
+            }
+            const m2 = html.match(/class=["']callout good["'][^>]*>([\s\S]*?)<\/div>/i);
+            if (m2) {
+              const t = m2[1].replace(/<[^>]+>/g,'').trim();
+              if (t) return t.length > 80 ? t.slice(0,80)+'...' : t;
+            }
+            return '';
+          }
+          function statusToTags(status, issues) {
+            const tags = [];
+            if (status==='complete') tags.push('COMPLETE');
+            if (status==='review')   tags.push('REVIEW');
+            if (status==='wip')      tags.push('WIP');
+            if (status==='new')      tags.push('NEW');
+            if (issues.critical===0 && status==='complete') tags.push('FINAL');
+            return tags;
+          }
+
+          const files = fs.readdirSync(dir).filter(f => f.endsWith('.html')).sort();
+          console.log('Found ' + files.length + ' HTML file(s):');
+          files.forEach(f => console.log('  - ' + f));
+
+          let existingMap = {};
+          if (fs.existsSync('reports.json')) {
+            try {
+              const d = JSON.parse(fs.readFileSync('reports.json','utf8'));
+              for (const r of (d.reports||[])) existingMap[r.file] = r;
+            } catch(e) { console.warn('Could not parse reports.json:', e.message); }
+          }
+
+          const reports = files.map((filename, i) => {
+            const filePath = dir+'/'+filename;
+            let html = '';
+            try { html = fs.readFileSync(filePath,'utf8'); }
+            catch(e) { console.error('ERROR reading '+filePath, e.message); return null; }
+
+            const metaM = html.match(/<!--\s*REPORT_META:\s*(\{[\s\S]*?\})\s*-->/);
+            if (metaM) {
+              try {
+                const meta = JSON.parse(metaM[1]);
+                const s = meta.status || extractStatus(html);
+                const iss = meta.issues || extractIssues(html);
+                console.log('[META] '+filename);
+                return { id: meta.id||String(i+1).padStart(3,'0'), file: filePath,
+                  date: meta.date||new Date().toISOString().slice(0,10),
+                  title: meta.title||extractTitle(html,filename),
+                  desc: meta.desc||extractDesc(html),
+                  status: s, tags: meta.tags||statusToTags(s,iss), issues: iss };
+              } catch(e) { console.warn('[WARN] REPORT_META parse failed in '+filename); }
+            }
+
+            const dateM = filename.match(/(\d{4})[_\-]?(\d{2})[_\-]?(\d{2})/);
+            const date  = dateM ? dateM[1]+'-'+dateM[2]+'-'+dateM[3]
+                                : (existingMap[filePath]?.date || new Date().toISOString().slice(0,10));
+            const status = extractStatus(html);
+            const issues = extractIssues(html);
+            console.log('[AUTO] '+filename+' date:'+date+' status:'+status);
+            return {
+              id:     existingMap[filePath]?.id || String(i+1).padStart(3,'0'),
+              file:   filePath, date,
+              title:  extractTitle(html, filename),
+              desc:   extractDesc(html),
+              status, tags: statusToTags(status, issues), issues
+            };
+          }).filter(Boolean);
+
+          fs.writeFileSync('reports.json', JSON.stringify({ updated: new Date().toISOString().slice(0,10), reports }, null, 2) + '\n');
+          console.log('reports.json updated: '+reports.length+' report(s)');
+          JSEOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Commit reports.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports.json
+          git diff --cached --quiet \
+            && echo "No changes to reports.json" \
+            || (git commit -m "chore: update reports.json [skip ci]" && git push)
