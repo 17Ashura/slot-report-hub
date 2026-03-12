@@ -1,5 +1,5 @@
 {
-  "updated": "2026-03-10",
+  "updated": "2026-03-12",
   "reports": [
     {
       "id": "001",
@@ -33,6 +33,23 @@
         "critical": 0,
         "warn": 7,
         "future": 8
+      }
+    },
+    {
+      "id": "003",
+      "file": "reports/report_20260312.html",
+      "date": "2026-03-12",
+      "title": "Battle & Buff System — Complete Report",
+      "desc": "Unity / C# — 全セッション完了レポート | 分析ファイル数: 20+",
+      "status": "complete",
+      "tags": [
+        "COMPLETE",
+        "FINAL"
+      ],
+      "issues": {
+        "critical": 0,
+        "warn": 0,
+        "future": 4
       }
     }
   ]
