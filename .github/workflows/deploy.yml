@@ -85,7 +85,6 @@ jobs:
             if (status==='complete') tags.push('COMPLETE');
             if (status==='review')   tags.push('REVIEW');
             if (status==='wip')      tags.push('WIP');
-            if (status==='new')      tags.push('NEW');
             if (issues.critical===0 && status==='complete') tags.push('FINAL');
             return tags;
           }
@@ -140,6 +139,11 @@ jobs:
             };
           }).filter(Boolean);
 
+          // 日付が最新のレポート1件にだけ NEW タグを付ける
+          if (reports.length > 0) {
+            const newest = reports.reduce((a,b) => a.date >= b.date ? a : b);
+            if (!newest.tags.includes('NEW')) newest.tags.unshift('NEW');
+          }
           fs.writeFileSync('reports.json', JSON.stringify({ updated: new Date().toISOString().slice(0,10), reports }, null, 2) + '\n');
           console.log('reports.json updated: '+reports.length+' report(s)');
           JSEOF
