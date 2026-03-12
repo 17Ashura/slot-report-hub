@@ -683,6 +683,7 @@ function buildCard(r) {
        href="${r.file}"
        data-status="${r.status}"
        data-badge="${r.badge || ''}"
+       data-tags="${r.tags.join(' ').toLowerCase()}"
        data-search="${(r.title + ' ' + r.desc + ' ' + r.tags.join(' ')).toLowerCase()}">
       <div class="card-top">
         <div class="card-tags">
@@ -732,7 +733,8 @@ function applyFilter() {
   cards.forEach(card => {
     const statusMatch = currentFilter === "all"
       || (currentFilter === "all-complete" && card.dataset.badge === "all-complete")
-      || (currentFilter !== "all-complete" && card.dataset.status === currentFilter);
+      || (currentFilter === "new"          && (card.dataset.tags || "").includes("new"))
+      || (currentFilter !== "all-complete" && currentFilter !== "new" && card.dataset.status === currentFilter);
     
     const show = statusMatch;
     card.classList.toggle("hidden", !show);
