@@ -16,7 +16,8 @@
         "critical": 0,
         "warn": 0,
         "future": 0
-      }
+      },
+      "badge": ""
     },
     {
       "id": "002",
@@ -33,7 +34,8 @@
         "critical": 0,
         "warn": 7,
         "future": 8
-      }
+      },
+      "badge": ""
     },
     {
       "id": "003",
@@ -43,6 +45,7 @@
       "desc": "Unity / C# — 全セッション完了レポート | 分析ファイル数: 20+",
       "status": "complete",
       "tags": [
+        "NEW",
         "COMPLETE",
         "FINAL"
       ],
@@ -50,7 +53,8 @@
         "critical": 0,
         "warn": 0,
         "future": 4
-      }
+      },
+      "badge": "all-complete"
     }
   ]
 }
