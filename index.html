@@ -19,6 +19,7 @@
     --text: #c8d8e8;
     --text-dim: #5a7a8a;
     --text-bright: #eaf4ff;
+    --gold: #ffd700;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -265,7 +266,8 @@
   .report-card.badge-all-complete::before { background: linear-gradient(90deg, #ffd700, #ffec6e, #ffd700); }
   .report-card.badge-all-complete { border-color: rgba(255,215,0,0.3); }
   .report-card.badge-all-complete:hover { border-color: #ffd700; box-shadow: 0 8px 32px rgba(255,215,0,0.12); }
-  .tag-all-complete { background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+  .tag-all-complete { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
+  .filter-btn.active-all-complete { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.08); }
   .report-card.status-review::before { background: var(--warn); }
   .report-card.status-wip::before { background: var(--danger); }
   .report-card.status-new::before { background: var(--accent); }
@@ -602,7 +604,7 @@
     </div>
     <div class="stat-card warn">
       <div class="stat-num" id="stat-wip">0</div>
-      <div class="stat-label">IN REVIEW</div>
+      <div class="stat-label">IN PROGRESS</div>
     </div>
     <div class="stat-card danger">
       <div class="stat-num" id="stat-issues">0</div>
@@ -613,14 +615,11 @@
   <!-- レポート一覧 -->
   <div class="section-label">// REPORT ARCHIVE</div>
 
-  <!-- 検索・フィルターバー -->
-  <div class="search-bar">
-    <div class="search-input-wrap">
-      <span class="search-icon">⌕</span>
-      <input class="search-input" type="text" id="search-input" placeholder="タイトル・説明を検索...">
-    </div>
+  <!-- フィルターバー（検索はAll Reportsページへ） -->
+  <div class="search-bar" style="justify-content:flex-end;gap:8px;padding:0 0 0 0;">
     <div class="filter-buttons">
       <button class="filter-btn active-all" data-filter="all">ALL</button>
+      <button class="filter-btn" data-filter="all-complete">★ ALL COMPLETE</button>
       <button class="filter-btn" data-filter="complete">✓ COMPLETE</button>
       <button class="filter-btn" data-filter="review">… REVIEW</button>
       <button class="filter-btn" data-filter="wip">! WIP</button>
@@ -683,6 +682,7 @@ function buildCard(r) {
     <a class="report-card status-${r.status}${badgeClass}"
        href="${r.file}"
        data-status="${r.status}"
+       data-badge="${r.badge || ''}"
        data-search="${(r.title + ' ' + r.desc + ' ' + r.tags.join(' ')).toLowerCase()}">
       <div class="card-top">
         <div class="card-tags">
@@ -721,9 +721,8 @@ function showError(msg) {
     </div>`;
 }
 
-// ------ 検索・フィルターロジック ------
+// ------ フィルターロジック ------
 let currentFilter = "all";
-let currentQuery  = "";
 let totalReports  = 0;
 
 function applyFilter() {
@@ -731,9 +730,11 @@ function applyFilter() {
   let visible = 0;
 
   cards.forEach(card => {
-    const statusMatch = currentFilter === "all" || card.dataset.status === currentFilter;
-    const queryMatch  = currentQuery === "" || (card.dataset.search || "").includes(currentQuery);
-    const show = statusMatch && queryMatch;
+    const statusMatch = currentFilter === "all"
+      || (currentFilter === "all-complete" && card.dataset.badge === "all-complete")
+      || (currentFilter !== "all-complete" && card.dataset.status === currentFilter);
+    
+    const show = statusMatch;
     card.classList.toggle("hidden", !show);
     if (show) visible++;
   });
@@ -751,7 +752,7 @@ function applyFilter() {
 
   // 件数表示
   const countEl = document.getElementById("result-count");
-  if (currentFilter === "all" && currentQuery === "") {
+  if (currentFilter === "all") {
     countEl.innerHTML = `<span>${totalReports}</span> report(s)`;
   } else {
     countEl.innerHTML = `<span>${visible}</span> / ${totalReports} report(s) — filtered`;
@@ -766,16 +767,13 @@ function initFilterControls() {
       document.querySelectorAll(".filter-btn").forEach(b => {
         b.className = "filter-btn"; // reset
       });
-      btn.classList.add(`active-${currentFilter}`);
+      const fCls = currentFilter === "all-complete" ? "active-all-complete" : `active-${currentFilter}`;
+      btn.classList.add(fCls);
       applyFilter();
     });
   });
 
-  // 検索ボックス
-  document.getElementById("search-input").addEventListener("input", e => {
-    currentQuery = e.target.value.trim().toLowerCase();
-    applyFilter();
-  });
+
 }
 
 async function init() {
