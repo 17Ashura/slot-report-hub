@@ -48,8 +48,16 @@ jobs:
             const t = m[1].replace(/<[^>]+>/g,'').toUpperCase();
             if (t.includes('WIP') || t.includes('IN PROGRESS')) return 'wip';
             if (t.includes('REVIEW'))                            return 'review';
-            if (t.includes('FIXED')||t.includes('COMPLETE')||t.includes('DONE')) return 'complete';
+            if (t.includes('FIXED') || t.includes('COMPLETE') || t.includes('DONE') ||
+                t.includes('ALL ITEMS') || t.includes('★'))     return 'complete';
             return 'new';
+          }
+          function extractBadge(html) {
+            const m = html.match(/class=["']status-badge["'][^>]*>([\s\S]*?)<\/div>/i);
+            if (!m) return '';
+            const t = m[1].replace(/<[^>]+>/g,'').toUpperCase();
+            if (t.includes('ALL ITEMS') || (t.includes('\u2605') && t.includes('COMPLETE'))) return 'all-complete';
+            return '';
           }
           function extractIssues(html) {
             const c = p => (html.match(new RegExp(p,'g'))||[]).length;
@@ -111,7 +119,8 @@ jobs:
                   date: meta.date||new Date().toISOString().slice(0,10),
                   title: meta.title||extractTitle(html,filename),
                   desc: meta.desc||extractDesc(html),
-                  status: s, tags: meta.tags||statusToTags(s,iss), issues: iss };
+                  status: s, tags: meta.tags||statusToTags(s,iss), issues: iss,
+                  badge: extractBadge(html) };
               } catch(e) { console.warn('[WARN] REPORT_META parse failed in '+filename); }
             }
 
@@ -126,7 +135,8 @@ jobs:
               file:   filePath, date,
               title:  extractTitle(html, filename),
               desc:   extractDesc(html),
-              status, tags: statusToTags(status, issues), issues
+              status, tags: statusToTags(status, issues), issues,
+              badge: extractBadge(html)
             };
           }).filter(Boolean);
 
