@@ -261,6 +261,11 @@
     transition: background 0.2s;
   }
   .report-card.status-complete::before { background: var(--accent3); }
+  /* ★ ALL ITEMS COMPLETE — 金色スタイル */
+  .report-card.badge-all-complete::before { background: linear-gradient(90deg, #ffd700, #ffec6e, #ffd700); }
+  .report-card.badge-all-complete { border-color: rgba(255,215,0,0.3); }
+  .report-card.badge-all-complete:hover { border-color: #ffd700; box-shadow: 0 8px 32px rgba(255,215,0,0.12); }
+  .tag-all-complete { background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
   .report-card.status-review::before { background: var(--warn); }
   .report-card.status-wip::before { background: var(--danger); }
   .report-card.status-new::before { background: var(--accent); }
@@ -408,6 +413,7 @@
     font-family: 'Share Tech Mono', monospace;
   }
   .tl-dot.complete { border-color: var(--accent3); color: var(--accent3); background: rgba(127,255,107,0.08); }
+  .tl-dot.gold { border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.08); }
   .tl-dot.warn { border-color: var(--warn); color: var(--warn); background: rgba(255,204,0,0.08); }
   .tl-dot.info { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
   .tl-body { flex: 1; padding-top: 8px; }
@@ -654,9 +660,10 @@ const TL_DOT = {
 
 function tagClass(text) {
   const t = text.toUpperCase();
-  if (t === "COMPLETE") return "tag-complete";
-  if (t === "REVIEW")   return "tag-review";
-  if (t === "WIP")      return "tag-wip";
+  if (t === "COMPLETE" || t === "FINAL") return "tag-complete";
+  if (t === "ALL COMPLETE")              return "tag-all-complete";
+  if (t === "REVIEW")                    return "tag-review";
+  if (t === "WIP")                       return "tag-wip";
   return "tag-new";
 }
 
@@ -671,13 +678,17 @@ function buildCard(r) {
   ].filter(Boolean).join("");
 
   // 検索・フィルター用にdata属性を付与
+  const badgeClass = r.badge ? ` badge-${r.badge}` : '';
   return `
-    <a class="report-card status-${r.status}"
+    <a class="report-card status-${r.status}${badgeClass}"
        href="${r.file}"
        data-status="${r.status}"
        data-search="${(r.title + ' ' + r.desc + ' ' + r.tags.join(' ')).toLowerCase()}">
       <div class="card-top">
-        <div class="card-tags">${tagsHtml}</div>
+        <div class="card-tags">
+          ${tagsHtml}
+          ${r.badge === 'all-complete' ? '<span class="card-tag tag-all-complete">★ ALL COMPLETE</span>' : ''}
+        </div>
         <span class="card-date">${r.date}</span>
       </div>
       <div class="card-body">
@@ -690,7 +701,8 @@ function buildCard(r) {
 }
 
 function buildTlItem(r) {
-  const dot = TL_DOT[r.status] || TL_DOT.new;
+  const isAllComplete = r.badge === 'all-complete';
+  const dot = isAllComplete ? { cls: 'gold', symbol: '★' } : (TL_DOT[r.status] || TL_DOT.new);
   return `
     <div class="tl-item">
       <div class="tl-dot ${dot.cls}">${dot.symbol}</div>
