@@ -153,4 +153,4 @@ jobs:
           git add reports.json
           git diff --cached --quiet \
             && echo "No changes to reports.json" \
-            || (git commit -m "chore: update reports.json [skip ci]" && git push)
+            || (git commit -m "chore: update reports.json [skip ci]" && git pull --rebase && git push)
