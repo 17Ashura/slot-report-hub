@@ -1,5 +1,5 @@
 {
-  "updated": "2026-03-12",
+  "updated": "2026-03-26",
   "reports": [
     {
       "id": "001",
@@ -50,6 +50,22 @@
         "critical": 0,
         "warn": 0,
         "future": 4
+      }
+    },
+    {
+      "id": "004",
+      "file": "reports/report_20260326.html",
+      "date": "2026-03-26",
+      "title": "Production System — Design Report",
+      "desc": "Unity / C# — 演出システム設計書 | 対象: SlotRoguelikeRPG",
+      "status": "new",
+      "tags": [
+        "NEW"
+      ],
+      "issues": {
+        "critical": 0,
+        "warn": 0,
+        "future": 0
       }
     }
   ]
