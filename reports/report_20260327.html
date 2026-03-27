@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Production System — Complete Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+  :root {
+    --bg:#0a0c10;--surface:#0f1218;--surface2:#151b24;--border:#1e2d3d;
+    --accent:#00d4ff;--accent2:#bf9fff;--accent3:#7fff6b;
+    --warn:#ffcc00;--amber:#ffaa33;--coral:#ff6b6b;
+    --text:#c8d8e8;--text-dim:#5a7a8a;--text-bright:#eaf4ff;--gold:#ffd700;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.010) 2px,rgba(0,212,255,0.010) 4px);pointer-events:none;z-index:1000;}
+
+  .header{border-bottom:1px solid var(--border);padding:24px 40px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,var(--surface) 0%,transparent 100%);position:sticky;top:0;z-index:100;backdrop-filter:blur(8px);}
+  .header-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;letter-spacing:4px;color:var(--warn);text-transform:uppercase;}
+  .header-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:2px;margin-top:2px;}
+  .status-badge{font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 12px;border:1px solid var(--accent3);color:var(--accent3);letter-spacing:2px;}
+
+  .main{padding:32px 40px;max-width:1100px;margin:0 auto;}
+
+  .banner{background:linear-gradient(135deg,rgba(0,212,255,0.05) 0%,rgba(127,255,107,0.04) 100%);border:1px solid rgba(0,212,255,0.3);padding:28px 32px;margin-bottom:36px;}
+  .banner .big{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:28px;color:var(--accent);letter-spacing:4px;}
+  .banner .sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:8px;letter-spacing:2px;}
+
+  .score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:40px;}
+  .score-card{background:var(--surface);border:1px solid var(--border);padding:20px 16px;text-align:center;position:relative;overflow:hidden;}
+  .score-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .score-card.cyan::before{background:var(--accent);}
+  .score-card.green::before{background:var(--accent3);}
+  .score-card.gold::before{background:var(--gold);}
+  .score-card.purple::before{background:var(--accent2);}
+  .score-card.amber::before{background:var(--amber);}
+  .score-num{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:42px;line-height:1;margin-bottom:4px;}
+  .score-card.cyan .score-num{color:var(--accent);}
+  .score-card.green .score-num{color:var(--accent3);}
+  .score-card.gold .score-num{color:var(--gold);}
+  .score-card.purple .score-num{color:var(--accent2);}
+  .score-card.amber .score-num{color:var(--amber);}
+  .score-label{font-size:11px;color:var(--text-dim);letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+  .score-delta{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent3);margin-top:4px;}
+
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:32px;flex-wrap:wrap;}
+  .tab{padding:12px 20px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;transition:all 0.2s;user-select:none;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;animation:fadeIn 0.3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .section-label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;padding-left:12px;border-left:2px solid var(--text-dim);}
+
+  .block{background:var(--surface);border:1px solid var(--border);padding:20px 24px;margin-bottom:14px;}
+  .block-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--text-bright);margin-bottom:8px;}
+  .block p{font-size:13px;line-height:1.8;}
+
+  code{font-family:'Share Tech Mono',monospace;font-size:12px;background:rgba(0,212,255,0.08);color:var(--accent);padding:1px 6px;}
+  code.g{background:rgba(127,255,107,0.08);color:var(--accent3);}
+  code.p{background:rgba(191,159,255,0.10);color:var(--accent2);}
+  code.a{background:rgba(255,170,51,0.10);color:var(--amber);}
+  pre{font-family:'Share Tech Mono',monospace;font-size:11px;background:#060809;border:1px solid var(--border);padding:16px;margin:10px 0;overflow-x:auto;line-height:1.7;color:#8ab4c8;}
+  .kw{color:#569cd6;}.ty{color:#4ec9b0;}.cm{color:#6a9955;}.fn{color:#dcdcaa;}.st{color:#ce9178;}
+
+  .arch-box{background:var(--surface);border:1px solid var(--border);padding:24px 28px;margin-bottom:20px;font-family:'Share Tech Mono',monospace;font-size:12px;overflow-x:auto;}
+  .flow-row{display:flex;align-items:center;gap:6px;margin:5px 0;flex-wrap:wrap;}
+  .box{display:inline-block;border:1px solid;padding:3px 10px;margin:2px;font-size:11px;}
+  .box-c{border-color:var(--accent);color:var(--accent);}
+  .box-g{border-color:var(--accent3);color:var(--accent3);}
+  .box-p{border-color:var(--accent2);color:var(--accent2);}
+  .box-a{border-color:var(--amber);color:var(--amber);}
+  .box-d{border-color:var(--text-dim);color:var(--text-dim);}
+  .arrow{color:var(--text-dim);}
+
+  table.dt{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;}
+  table.dt th{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim);text-align:left;padding:8px 14px;border-bottom:1px solid var(--border);}
+  table.dt td{padding:10px 14px;border-bottom:1px solid rgba(30,45,61,0.5);vertical-align:top;font-size:13px;}
+  table.dt tr:hover td{background:var(--surface2);}
+
+  .checklist{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+  .ci{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);}
+  .ci-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px;font-weight:700;}
+  .ci-icon.ok{background:rgba(127,255,107,0.12);color:var(--accent3);border:1px solid rgba(127,255,107,0.3);}
+  .ci-icon.next{background:rgba(255,204,0,0.12);color:var(--warn);border:1px solid rgba(255,204,0,0.3);}
+  .ci-icon.info{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.3);}
+  .ci-text{font-size:13px;line-height:1.6;}
+  .ci-text strong{color:var(--text-bright);font-weight:700;}
+
+  .callout{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 18px;margin:12px 0;font-size:13px;line-height:1.7;}
+  .callout.g{border-left-color:var(--accent3);}
+  .callout.w{border-left-color:var(--warn);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+  .stat-box{background:var(--surface);border:1px solid var(--border);padding:16px;text-align:center;}
+  .stat-num{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:32px;color:var(--accent);}
+  .stat-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-top:4px;}
+
+  .file-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 18px;margin-bottom:10px;}
+  .file-name{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:4px;}
+  .file-role{font-size:12px;color:var(--text);line-height:1.6;}
+  .file-card.g{border-left-color:var(--accent3);}
+  .file-card.g .file-name{color:var(--accent3);}
+  .file-card.p{border-left-color:var(--accent2);}
+  .file-card.p .file-name{color:var(--accent2);}
+  .file-card.a{border-left-color:var(--amber);}
+  .file-card.a .file-name{color:var(--amber);}
+
+  .prompt-box{background:var(--surface2);border:1px solid rgba(255,204,0,0.4);border-left:3px solid var(--warn);padding:18px 20px;margin-bottom:16px;}
+  .prompt-box .label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--warn);letter-spacing:2px;margin-bottom:10px;}
+  .prompt-box p{font-size:13px;line-height:1.8;color:var(--text);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="header-title">🎰 Production System — Complete Report</div>
+    <div class="header-sub">SlotRoguelikeRPG / Unity C# — 演出システム 全セッション完了レポート</div>
+  </div>
+  <div class="status-badge">✓ SESSION COMPLETE</div>
+</div>
+
+<div class="main">
+
+  <div class="banner">
+    <div class="big">演出システム 骨格実装 完了</div>
+    <div class="sub">ProductionPlan / ProductionLottery / ProductionRuleSet / 各レイヤー / リール演出 / フリーズ制御 — 全骨格完成</div>
+  </div>
+
+  <div class="score-grid">
+    <div class="score-card gold">
+      <div class="score-num">22</div>
+      <div class="score-label">新規作成ファイル</div>
+      <div class="score-delta">演出システム全体</div>
+    </div>
+    <div class="score-card green">
+      <div class="score-num">8</div>
+      <div class="score-label">既存ファイル更新</div>
+      <div class="score-delta">変更最小限を維持</div>
+    </div>
+    <div class="score-card cyan">
+      <div class="score-num">4</div>
+      <div class="score-label">演出タイミング</div>
+      <div class="score-delta">LeverOn〜第3停止</div>
+    </div>
+    <div class="score-card purple">
+      <div class="score-num">6</div>
+      <div class="score-label">条件フィルター</div>
+      <div class="score-delta">RuleSet 設計</div>
+    </div>
+    <div class="score-card amber">
+      <div class="score-num">0</div>
+      <div class="score-label">コンパイルエラー</div>
+      <div class="score-delta">全て解消済み</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">📋 概要</div>
+    <div class="tab" onclick="switchTab('flow')">🔄 フロー設計</div>
+    <div class="tab" onclick="switchTab('files')">📁 ファイル一覧</div>
+    <div class="tab" onclick="switchTab('ruleset')">⚙ RuleSet 設計</div>
+    <div class="tab" onclick="switchTab('reel')">🎰 リール演出</div>
+    <div class="tab" onclick="switchTab('next')">🚀 次のセッション</div>
+  </div>
+
+  <!-- ===== 概要 ===== -->
+  <div id="tab-overview" class="tab-content active">
+
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num">22</div><div class="stat-label">新規ファイル数</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--accent3)">4</div><div class="stat-label">演出タイミング</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--accent2)">4</div><div class="stat-label">IProductionEvent 実装</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--gold)">0</div><div class="stat-label">残存エラー</div></div>
+    </div>
+
+    <div class="section-label">設計の3大原則（このセッションで確立）</div>
+    <div class="checklist">
+      <div class="ci">
+        <div class="ci-icon ok">①</div>
+        <div class="ci-text"><strong>バトル処理と演出の完全分離</strong><br>LeverWaitState でバトルを即時完了（結果を隠蔽）し、各停止タイミングで演出を「見せるだけ」にする。演出をスキップしても結果は変わらない。</div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon ok">②</div>
+        <div class="ci-text"><strong>BattleEventChannel を演出計画の情報源にする</strong><br>ProductionLottery が BattleEventChannel を購読してバトル結果を収集。TurnManager / BattleManager への変更ゼロで演出システムが接続できる。</div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon ok">③</div>
+        <div class="ci-text"><strong>ProductionRuleSet（SO）でルールをコード外に出す</strong><br>「出目×HP残量×ラッシュ状態」などの条件と演出の組み合わせを Inspector で設定可能に。LotteryResult 追加時もコード修正不要。</div>
+      </div>
+    </div>
+
+    <div class="section-label">確立されたフロー（確定版）</div>
+    <div class="arch-box">
+      <div class="flow-row"><span class="box box-d">LeverState</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">Lottery.Pick() → 子役抽選確定</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="box box-g">LeverWaitState</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">StartReelsWithDelayAsync() [リール回転開始]</span></div>
+      <div class="flow-row" style="margin-left:40px"><span class="arrow">└─▶</span><span class="box box-c">ExecuteBattleAndBuildPlan()</span><span class="arrow">── バトル即時完了 → ProductionPlan 生成</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="box box-a">FirstStopState</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">await PlayTimingAsync(plan.OnFirstStop)</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="box box-a">SecondStopState</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">await PlayTimingAsync(plan.OnSecondStop)</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="box box-a">ThirdStopState</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">await PlayTimingAsync(plan.OnThirdStop)</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="box box-d">EndState</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">Replay → LeverState / 通常 → IdleState（ルーティングのみ）</span></div>
+    </div>
+
+    <div class="section-label">既存コードへの変更方針</div>
+    <div class="callout g">
+      <strong>変更最小限を徹底。</strong>BattleManager / TurnManager / BuffManager への変更はゼロ。SlotManager への追加は3フィールド＋2メソッドのみ。Lottery.cs は1行追加（SetProductionPlan の呼び出し）のみ。
+    </div>
+
+  </div>
+
+  <!-- ===== フロー設計 ===== -->
+  <div id="tab-flow" class="tab-content">
+
+    <div class="section-label">ProductionLottery の動き（核心）</div>
+    <div class="arch-box">
+      <pre style="margin:0;border:none;padding:0;background:transparent"><span class="cm">// ① バトル前に購読開始</span>
+eventChannel.OnEventRaised += Collect;
+
+<span class="cm">// ② TurnManager.StartBattle() 実行</span>
+<span class="cm">//    → BattleManager.ExecuteAttack()</span>
+<span class="cm">//        → eventChannel.Raise(DamageApplied)  ← Collect() に流れる</span>
+<span class="cm">//        → eventChannel.Raise(UnitDefeated)   ← Collect() に流れる</span>
+battleAction();
+
+<span class="cm">// ③ 購読解除</span>
+eventChannel.OnEventRaised -= Collect;
+
+<span class="cm">// ④ 収集結果 × ProductionRuleSet → ProductionPlan 生成</span>
+<span class="kw">return</span> <span class="fn">BuildPlan</span>(outcome);</pre>
+    </div>
+
+    <div class="section-label">ProductionPlan 構造</div>
+    <div class="arch-box">
+      <div class="flow-row"><span class="box box-c">ProductionPlan</span></div>
+      <div style="margin-left:20px;margin-top:6px;color:var(--text-dim)">
+        <div>├─ LotteryOutcome  : Lottery.Outcome</div>
+        <div>├─ <span style="color:var(--accent3)">OnLeverOn</span>    : ProductionTiming</div>
+        <div>├─ <span style="color:var(--accent3)">OnFirstStop</span>  : ProductionTiming</div>
+        <div>├─ <span style="color:var(--accent3)">OnSecondStop</span> : ProductionTiming</div>
+        <div>└─ <span style="color:var(--accent3)">OnThirdStop</span>  : ProductionTiming</div>
+      </div>
+      <br>
+      <div class="flow-row"><span class="box box-g">ProductionTiming</span></div>
+      <div style="margin-left:20px;margin-top:6px;color:var(--text-dim)">
+        <div>└─ Events : List&lt;<span style="color:var(--accent2)">IProductionEvent</span>&gt;  <span style="color:var(--text-dim)">// 順番に await</span></div>
+      </div>
+      <br>
+      <div class="flow-row">
+        <span class="box box-p">CutinEvent</span>
+        <span class="box box-p">BattleAnimEvent</span>
+        <span class="box box-p">DialogueEvent</span>
+        <span class="box box-p">CinemaEvent</span>
+        <span class="arrow">: IProductionEvent</span>
+      </div>
+    </div>
+
+    <div class="section-label">Replay 仕様</div>
+    <div class="callout w">
+      <strong>Replay の場合、MaxBet（コイン消費）とバトルをスキップ</strong>して直接 LeverState へ遷移する。<br>
+      通常フロー：IdleState → MaxBetState → LeverState<br>
+      Replay フロー：EndState → LeverState（MaxBet スキップ）
+    </div>
+
+    <div class="section-label">並走設計の考え方</div>
+    <div class="callout">
+      リール回転中（LeverWaitState）にバトル処理を<strong>同期・即時完了</strong>させ、結果をユーザーに隠蔽する。各ストップステートで演出を流すことで「スロットが止まるたびに何かが起きる」体験を作る。演出を全スキップしてもバトル結果は変わらない。
+    </div>
+
+  </div>
+
+  <!-- ===== ファイル一覧 ===== -->
+  <div id="tab-files" class="tab-content">
+
+    <div class="section-label">データ・インターフェース層（新規）</div>
+    <div class="file-card"><div class="file-name">ProductionEnums.cs</div><div class="file-role">ReelProductionType / CutinType / BattleAnimType / DialogueType / CinemaType / フィルター enum 群（BattleEventTypeFilter / OutcomeFilter / AttackerFilter / HpThresholdFilter / RushFilter / ProductionTimingSlot / ProductionEventType）</div></div>
+    <div class="file-card"><div class="file-name">IProductionEvent.cs</div><div class="file-role">演出1件の単位インターフェース。PlayAsync() + Skip() を持つ。ProductionTiming に積まれて順番に await される。</div></div>
+    <div class="file-card"><div class="file-name">ProductionTiming.cs</div><div class="file-role">List&lt;IProductionEvent&gt; を保持し、PlayAsync() で順番に await する。HasEvents プロパティで空チェック。</div></div>
+    <div class="file-card"><div class="file-name">ProductionPlan.cs</div><div class="file-role">1ターンの演出計画。OnLeverOn / OnFirstStop / OnSecondStop / OnThirdStop の4タイミングを持つ。使い捨て（ターンごとに新規生成）。</div></div>
+    <div class="file-card"><div class="file-name">ProductionContext.cs</div><div class="file-role">ルール評価用ランタイムデータ。BattleEvent / Outcome / EnemyHpRate / PlayerHpRate / IsRushTurn を保持。</div></div>
+
+    <div class="section-label">IProductionEvent 実装クラス（新規・骨格）</div>
+    <div class="file-card p"><div class="file-name">CutinEvent.cs</div><div class="file-role">カットイン・フラッシュ演出。CutinType を保持。TODO: 実際のアニメ・エフェクト呼び出しを実装する。</div></div>
+    <div class="file-card p"><div class="file-name">BattleAnimEvent.cs</div><div class="file-role">プレイヤー攻撃・敵攻撃・バフ発動アニメーション。BattleAnimType + Value（ダメージ量等）を保持。</div></div>
+    <div class="file-card p"><div class="file-name">DialogueEvent.cs</div><div class="file-role">台詞・テキスト表示。{attacker} / {target} / {value} プレースホルダーをランタイム値で置換する。</div></div>
+    <div class="file-card p"><div class="file-name">CinemaEvent.cs</div><div class="file-role">シネマティクス演出（ボス登場・撃破等）。CinemaType.None の場合は即完了（ゼロコスト）。</div></div>
+
+    <div class="section-label">ProductionRuleSet 層（新規）</div>
+    <div class="file-card g"><div class="file-name">ProductionCondition.cs</div><div class="file-role">発動条件（Serializable）。EventType / Attacker / Outcome / EnemyHp / PlayerHp / Rush の6条件。全て Any 指定で「条件なし」として通過する。</div></div>
+    <div class="file-card g"><div class="file-name">ProductionActionData.cs</div><div class="file-role">演出アクション1件（Serializable）。タイミング・種別・各種設定を持つ。ToProductionEvent(ctx) で IProductionEvent に変換。</div></div>
+    <div class="file-card g"><div class="file-name">ProductionRule.cs</div><div class="file-role">Condition + Actions のセット。TryApply(ctx, plan) で条件評価 → マッチ時に Actions を ProductionPlan の対応タイミングに追加する。</div></div>
+    <div class="file-card g"><div class="file-name">ProductionRuleSet.cs</div><div class="file-role">ScriptableObject。List&lt;ProductionRule&gt; を保持。Assets > Create > Production > ProductionRuleSet で作成。全ルールを上から評価・適用する。</div></div>
+
+    <div class="section-label">コントロール層（新規）</div>
+    <div class="file-card a"><div class="file-name">ProductionLottery.cs</div><div class="file-role">BattleEventChannel を購読してバトル結果を収集し、ProductionRuleSet を適用して ProductionPlan を生成する。ExecuteAndResolve(outcome, battleAction) が唯一のエントリポイント。</div></div>
+    <div class="file-card a"><div class="file-name">ProductionDirector.cs</div><div class="file-role">演出の司令塔。PlayTimingAsync(timing) で ProductionTiming の Events を順番に await する。各ストップステートから呼ばれる。</div></div>
+
+    <div class="section-label">リール演出（新規・更新）</div>
+    <div class="file-card"><div class="file-name">ReelScroll.cs（更新）</div><div class="file-role">StartScrollReverse() / StartScrollHighSpeed() を追加。highSpeedMultiplier（Inspector で倍率調整可）。StopScroll() で速度リセット。</div></div>
+    <div class="file-card"><div class="file-name">ReelFreezeHandler.cs（新規）</div><div class="file-role">リールフリーズ演出。TryStartFreeze() → SetFreeze(true) → await 待機 → SetFreeze(false) → 自動停止。UniTask で非同期制御。</div></div>
+
+    <div class="section-label">既存ファイルへの追加差分</div>
+    <table class="dt">
+      <tr><th>ファイル</th><th>変更内容</th></tr>
+      <tr><td><code>SlotManager.cs</code></td><td>CurrentPlan プロパティ / ExecuteBattleAndBuildPlan() / PlayTimingAsync() を追加。フィールド3つ追加。</td></tr>
+      <tr><td><code>Lottery.cs</code></td><td>Pick() 末尾に slotManager.SetProductionPlan(LastOutcome) を1行追加。</td></tr>
+      <tr><td><code>ReelManager.cs</code></td><td>reelFreezeFlags[] / SetFreeze() / IsFrozen() を追加。StartAllReels() で ProductionPlan を参照して変則回転を制御。</td></tr>
+      <tr><td><code>PressPatternManager.cs</code></td><td>ReelManager 参照を追加。ExecuteStop() 先頭に IsFrozen チェックを1行追加。</td></tr>
+      <tr><td><code>ReelChecker.cs</code></td><td>ReelFreezeHandler フィールド追加。StopReel() 先頭に TryStartFreeze() チェックを1行追加。</td></tr>
+      <tr><td><code>TurnManager.cs</code></td><td>IsRushTurn プロパティ追加。StartBattle() で予約 Strategy 使用時に true にセット。</td></tr>
+      <tr><td><code>BattleEventType.cs</code></td><td>BuffApplied / DebuffApplied / BuffExpired を追加。</td></tr>
+      <tr><td><code>BattleEvent.cs</code></td><td>BuffType / BuffDuration フィールドを追加（攻撃系イベントでは未使用）。</td></tr>
+    </table>
+
+    <div class="section-label">更新されたステートクラス</div>
+    <table class="dt">
+      <tr><th>ファイル</th><th>変更内容</th></tr>
+      <tr><td><code>LeverWaitState.cs</code></td><td>ExecuteBattleAndBuildPlan() を追加呼び出し（リール回転と並走で同期実行）。</td></tr>
+      <tr><td><code>FirstStopState.cs</code></td><td>PlayAndTransitionAsync() を追加。OnFirstStop 演出を await してから SecondStopWaitingState へ遷移。</td></tr>
+      <tr><td><code>SecondStopState.cs</code></td><td>PlayAndTransitionAsync() を追加。OnSecondStop 演出を await してから ThirdStopWaitingState へ遷移。</td></tr>
+      <tr><td><code>ThirdStopState.cs</code></td><td>PlayAndTransitionAsync() を追加。OnThirdStop 演出を await してから EndState へ遷移。</td></tr>
+      <tr><td><code>EndState.cs</code></td><td>Replay → LeverState（MaxBet スキップ）/ 通常 → IdleState（ルーティングのみ）に修正。</td></tr>
+    </table>
+
+  </div>
+
+  <!-- ===== RuleSet 設計 ===== -->
+  <div id="tab-ruleset" class="tab-content">
+
+    <div class="callout g">
+      <strong>ProductionRuleSet はコードを一切触らずに演出ルールを変更できる設計です。</strong>新しい LotteryResult が追加されても SO にルールを追加するだけで対応できます。
+    </div>
+
+    <div class="section-label">条件フィルター一覧</div>
+    <table class="dt">
+      <tr><th>フィルター</th><th>種別</th><th>選択肢</th></tr>
+      <tr><td><code>EventType</code></td><td>どのバトルイベントに反応するか</td><td>Any / AttackMissed / DamageApplied / UnitDefeated / BuffApplied / DebuffApplied / BuffExpired</td></tr>
+      <tr><td><code>Attacker</code></td><td>攻撃者が誰か</td><td>Any / Player / Enemy</td></tr>
+      <tr><td><code>Outcome</code></td><td>どの出目に反応するか</td><td>Any / None / Replay / Bell / Green / CherryA / CherryB / Magic</td></tr>
+      <tr><td><code>EnemyHp</code></td><td>敵 HP 残量閾値</td><td>Any / Below75 / Below50 / Below25 / Below10</td></tr>
+      <tr><td><code>PlayerHp</code></td><td>プレイヤー HP 残量閾値</td><td>Any / Below75 / Below50 / Below25 / Below10</td></tr>
+      <tr><td><code>Rush</code></td><td>ラッシュターン中か</td><td>Any / IsRush / NotRush</td></tr>
+    </table>
+
+    <div class="section-label">設定例（Inspector イメージ）</div>
+
+    <div class="block">
+      <div class="block-title">Rule: "Magic → クリティカル演出"</div>
+      <p>Condition: EventType=DamageApplied, Attacker=Player, Outcome=Magic, 他=Any</p>
+      <p>Actions: OnFirstStop → Cutin(Flash) → BattleAnim(PlayerCritical)</p>
+    </div>
+    <div class="block">
+      <div class="block-title">Rule: "敵 HP 25% 以下 → 激アツ演出"</div>
+      <p>Condition: EventType=DamageApplied, EnemyHp=Below25, 他=Any</p>
+      <p>Actions: OnFirstStop → Cutin(Rainbow) → BattleAnim(PlayerCritical)</p>
+    </div>
+    <div class="block">
+      <div class="block-title">Rule: "ラッシュ中プレイヤー攻撃 → 特殊カットイン"</div>
+      <p>Condition: EventType=DamageApplied, Attacker=Player, Rush=IsRush, 他=Any</p>
+      <p>Actions: OnFirstStop → Cutin(CharacterCutin) → BattleAnim(PlayerCritical)</p>
+    </div>
+    <div class="block">
+      <div class="block-title">Rule: "敵撃破 → シネマ"</div>
+      <p>Condition: EventType=UnitDefeated, 他=Any</p>
+      <p>Actions: OnThirdStop → Cinema(EnemyDefeated)</p>
+    </div>
+    <div class="block">
+      <div class="block-title">Rule: "バフ発動 → 第2停止演出"</div>
+      <p>Condition: EventType=BuffApplied, 他=Any</p>
+      <p>Actions: OnSecondStop → BattleAnim(BuffActivated) → Dialogue("{target}にバフが発動！")</p>
+    </div>
+
+    <div class="section-label">Dialogue プレースホルダー</div>
+    <table class="dt">
+      <tr><th>プレースホルダー</th><th>置換内容</th><th>例</th></tr>
+      <tr><td><code>{attacker}</code></td><td>攻撃者のキャラクター名</td><td>勇者</td></tr>
+      <tr><td><code>{target}</code></td><td>対象のキャラクター名</td><td>スライム</td></tr>
+      <tr><td><code>{value}</code></td><td>ダメージ量・バフ値等</td><td>42</td></tr>
+    </table>
+
+  </div>
+
+  <!-- ===== リール演出 ===== -->
+  <div id="tab-reel" class="tab-content">
+
+    <div class="section-label">ReelProductionType のタイミング別区分</div>
+    <table class="dt">
+      <tr><th>種別</th><th>タイミング</th><th>処理クラス</th><th>内容</th></tr>
+      <tr><td><code>ReverseStart</code></td><td>回転開始時</td><td>ReelManager</td><td>逆回転（上方向・通常速度）</td></tr>
+      <tr><td><code>HighSpeed</code></td><td>回転開始時</td><td>ReelManager</td><td>高速回転（Inspector で倍率調整）</td></tr>
+      <tr><td><code>Freeze</code></td><td>ボタン停止後</td><td>ReelFreezeHandler</td><td>特定リールだけ止まらず回り続ける。ボタン入力無効化→自動停止。</td></tr>
+      <tr><td><code>Flash</code></td><td>全停止後</td><td>ProductionDirector 管下</td><td>フラッシュ</td></tr>
+      <tr><td><code>Vibrate</code></td><td>全停止後</td><td>ProductionDirector 管下</td><td>振動</td></tr>
+      <tr><td><code>Rainbow</code></td><td>全停止後</td><td>ProductionDirector 管下</td><td>レインボー（激アツ）</td></tr>
+    </table>
+
+    <div class="section-label">フリーズ制御の仕組み</div>
+    <div class="arch-box">
+      <div class="flow-row"><span class="box box-d">PressPatternManager.ExecuteStop()</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">ReelManager.IsFrozen(target) チェック</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="arrow">フリーズ中 → return（入力無視）</span></div>
+      <br>
+      <div class="flow-row"><span class="box box-d">ReelChecker.StopReel()</span><span class="arrow">──▶</span><span style="color:var(--text-dim)">ReelFreezeHandler.TryStartFreeze()</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="arrow">true → SetFreeze(true) → await freezeDuration → SetFreeze(false) → 自動停止</span></div>
+      <div class="flow-row" style="margin-left:20px"><span class="arrow">false → 通常停止処理へ</span></div>
+    </div>
+
+    <div class="section-label">ReelScroll 追加 API</div>
+    <table class="dt">
+      <tr><th>メソッド</th><th>動作</th><th>備考</th></tr>
+      <tr><td><code>StartScrollReverse()</code></td><td>上方向・通常速度で回転開始</td><td>演出側から意図を明示して呼ぶための独立 API</td></tr>
+      <tr><td><code>StartScrollHighSpeed()</code></td><td>下方向・高速で回転開始</td><td>速度 = scrollSpeed × highSpeedMultiplier</td></tr>
+    </table>
+
+    <div class="section-label">Inspector でやること（リール演出）</div>
+    <div class="checklist">
+      <div class="ci">
+        <div class="ci-icon info">1</div>
+        <div class="ci-text"><strong>各リール GameObject に ReelFreezeHandler を追加</strong><br>Left / Center / Right それぞれに1つ。reelType / reelManager / slotManager をアサイン。</div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon info">2</div>
+        <div class="ci-text"><strong>ReelChecker の freezeHandler スロットに ReelFreezeHandler をアサイン</strong></div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon info">3</div>
+        <div class="ci-text"><strong>PressPatternManager の reelManager スロットに ReelManager をアサイン</strong></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== 次のセッション ===== -->
+  <div id="tab-next" class="tab-content">
+
+    <div class="section-label">残作業（優先度順）</div>
+    <table class="dt">
+      <tr><th>優先度</th><th>作業内容</th><th>備考</th></tr>
+      <tr><td><span style="color:var(--coral)">🔴 高</span></td><td>マジックポイント・プレイヤーラッシュ システム設計・実装</td><td>TurnManager.ReserveStrategy / IsRushTurn は実装済み</td></tr>
+      <tr><td><span style="color:var(--coral)">🔴 高</span></td><td>IProductionEvent の中身実装（アニメ・エフェクト接続）</td><td>CutinEvent / BattleAnimEvent / DialogueEvent / CinemaEvent の TODO</td></tr>
+      <tr><td><span style="color:var(--warn)">🟡 中</span></td><td>ProductionRuleSet に実際のルールを Inspector で設定</td><td>骨格完成後に RuleSet タブ参照</td></tr>
+      <tr><td><span style="color:var(--warn)">🟡 中</span></td><td>HP 率計算の有効化</td><td>ProductionLottery の TODO コメントを外すだけ</td></tr>
+      <tr><td><span style="color:var(--accent3)">🟢 低</span></td><td>BattleLogUI を演出システムと連携</td><td>現在はデバッグ用 UI として独立</td></tr>
+      <tr><td><span style="color:var(--accent3)">🟢 低</span></td><td>敵の攻撃演出実装</td><td>EnemyController.StartTurn() に演出を追加</td></tr>
+    </table>
+
+    <div class="section-label">次のセッション開始時の指示プロンプト</div>
+    <div class="prompt-box">
+      <div class="label">▶ NEXT SESSION PROMPT（コピーして使用）</div>
+      <p>
+        スロット型ローグライクRPGのUnity C#プロジェクトに「マジックポイント・プレイヤーラッシュ」システムを実装します。<br><br>
+        前のセッションで演出システム（ProductionSystem）の骨格実装が完了しています。<br>
+        添付の Production System Complete Report（HTML）に全設計情報が記載されています。<br><br>
+        以下のファイルを添付します：<br>
+        ・TurnManager.cs（IsRushTurn 差分適用済み）<br>
+        ・SlotManager.cs（ExecuteBattleAndBuildPlan 差分適用済み）<br>
+        ・Lottery.cs<br>
+        ・PlayerController.cs<br>
+        ・BattleEventChannel.cs<br>
+        ・ProductionLottery.cs<br><br>
+        UniTask 使用可能。既存システムへの変更は最小限でお願いします。<br>
+        まず設計を相談してから実装に入りたいです。
+      </p>
+    </div>
+
+    <div class="section-label">次のセッションで添付すべきファイル</div>
+    <table class="dt">
+      <tr><th>ファイル</th><th>理由</th></tr>
+      <tr><td>この HTML レポート</td><td>全設計情報の共有</td></tr>
+      <tr><td>TurnManager.cs</td><td>IsRushTurn / ReserveStrategy の確認</td></tr>
+      <tr><td>SlotManager.cs</td><td>ExecuteBattleAndBuildPlan の確認</td></tr>
+      <tr><td>Lottery.cs</td><td>LotteryResult・Magic 判定の確認</td></tr>
+      <tr><td>PlayerController.cs</td><td>StartTurn() の実装確認</td></tr>
+      <tr><td>BattleEventChannel.cs</td><td>イベントバスの確認</td></tr>
+      <tr><td>ProductionLottery.cs</td><td>ラッシュ演出ルール追加のため</td></tr>
+    </table>
+
+    <div class="callout g" style="margin-top:24px;text-align:center">
+      <strong style="font-family:'Rajdhani',sans-serif;font-size:18px;letter-spacing:2px;">お疲れ様でした。良いゲームになりますように！</strong>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function switchTab(name) {
+  const names = ['overview','flow','files','ruleset','reel','next'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i] === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + name));
+}
+</script>
+</body>
+</html>
